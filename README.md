@@ -1,46 +1,39 @@
-# Taller: diseño e implementación de un algoritmo genético
+# Laboratorio: ascenso de colinas vs temple simulado en el puzle 3×3
 
-Selección óptima de proyectos bajo restricción presupuestal (mochila 0-1,
-n = 10 proyectos, presupuesto W = 50).
+Comparación de ascenso de colinas (HC) y temple simulado (SA) en el puzle 8
+con heurística Manhattan, cada algoritmo en su mejor configuración y con el
+mismo presupuesto de evaluaciones, más el análisis de complejidad
+computacional. Todos los parámetros se eligen con el mismo protocolo de
+calibración, en un conjunto de instancias distinto del de prueba.
 
 ## Requisitos
 
 - Python 3.9 o superior
-- `matplotlib` (solo para generar las figuras)
+- `matplotlib` (solo para las figuras)
 
 ```bash
 pip install matplotlib
 ```
 
-No se usa ninguna biblioteca que implemente algoritmos genéticos. El intervalo
-de confianza de Wilson, la prueba exacta de McNemar y la corrección de Holm
-están implementados en `src/metricas.py` y `src/experimentos.py` sin
-dependencias externas.
-
 ## Ejecución
 
-Todos los scripts se ejecutan desde `src/`.
+Todos los scripts se ejecutan desde `src/`, en este orden:
 
 ```bash
 cd src
-
-python3 exacto.py              # verdad de terreno: enumeración, PD, voraz, lambda*
-python3 baseline.py            # línea base aleatoria + autoprueba analítica
-python3 verificar_genetico.py  # 9 pruebas de verificación del AG
-python3 traza_manual.py        # traza completa de una iteración (punto 3)
-python3 experimentos.py        # experimentos completos -> resultados/resultados.json
-python3 graficas.py            # figuras -> resultados/fig*.pdf y fig*.png
+python3 verificar_parte1.py          # representación + BFS: 7 comprobaciones
+python3 parte2_hc.py                 # HC simple y estocástico, exactos sobre los 181 440 estados
+python3 parte3a_equilibrio.py        # equilibrio exacto del SA en función de p
+python3 parte3b_calibracion.py       # calibración de HC y SA, 5 presupuestos (≈4 min)
+python3 parte3c_iteraciones_por_T.py # comprobación de L (iteraciones por temperatura)
+python3 parte4_experimento.py        # 50 000 ejecuciones en el conjunto de prueba (≈1 min)
+python3 analisis.py                  # comparación pareada -> resultados/resumen.json
+python3 figuras.py                   # figuras -> resultados/f*.pdf y f*.png
 ```
 
-`experimentos.py` tarda unos 45 segundos (2200 ejecuciones). `graficas.py`
-requiere que `experimentos.py` se haya ejecutado antes.
-
-Para reproducir todo de cero:
-
-```bash
-cd src && python3 exacto.py && python3 verificar_genetico.py \
-  && python3 experimentos.py && python3 graficas.py
-```
+Todo es determinista (un generador con semilla fija por ejecución): al
+repetir el pipeline completo, las ejecuciones y los JSON salen idénticos. Solo
+cambian los tiempos de reloj.
 
 ## Informe
 
@@ -48,66 +41,28 @@ cd src && python3 exacto.py && python3 verificar_genetico.py \
 cd informe && pdflatex informe.tex && pdflatex informe.tex
 ```
 
-Se compila dos veces para resolver las referencias cruzadas. Requiere
-`babel`, `booktabs`, `amsmath`, `geometry`, `microtype`, `hyperref` y
-`caption`.
+Si Latin Modern está instalado (MiKTeX, TeX Live completo, Overleaf), se usa
+con codificación T1; si no, el documento compila con Computer Modern.
 
 ## Estructura
 
 ```
 src/
-  instancia.py           datos del problema; C(X), B(X), factibilidad
-  exacto.py              enumeración, programación dinámica, voraz, lambda*
-  metricas.py            intervalo de Wilson, resumen con censura
-  baseline.py            búsqueda aleatoria con presupuesto igualado
-  genetico.py            las nueve funciones exigidas + medición de diversidad
-  verificar_genetico.py  pruebas de verificación
-  traza_manual.py        traza paso a paso de una iteración (punto 3)
-  experimentos.py        factorial, barrido de lambda, A/B/C, McNemar, Holm
-  graficas.py            figuras del informe
-resultados/
-  resultados.json        salida completa de los experimentos
-  hallazgos_lambda.txt   atractores dominantes por régimen de lambda
-  fig1..fig5 .pdf/.png   figuras
-informe/
-  informe.tex            informe en LaTeX
-  informe.pdf            informe compilado
+  puzzle.py                   estado, movimientos, Manhattan (completa e incremental), paridad
+  ground_truth.py             BFS desde la meta -> d*(s) para todos los estados
+  hc.py                       HC simple, estocástico (con éxito exacto) y con reinicios
+  sa.py                       SA con programa calibrado por (p0, pf) y presupuesto; L iteraciones por T
+  landscape.py                altura de barrera (Dijkstra minimax)
+  instancias.py               bandas de d*, conjuntos de calibración y prueba disjuntos
+  metricas.py                 longitud de camino sin ciclos (borrado de bucles)
+  verificar_parte1.py         comprobaciones de la representación
+  parte2_hc.py                HC exacto, cota 3h+2, subidas obligatorias u
+  parte3a_equilibrio.py       π_p(s) ∝ deg(s)·p^h(s), verificado con cadenas largas
+  parte3b_calibracion.py      rejillas de HC (variante × k) y SA (p0 × pf) por presupuesto
+  parte3c_iteraciones_por_T.py  L ∈ {1, 10, 50}
+  parte4_experimento.py       comparación a presupuesto igualado
+  analisis.py                 resumen con diferencias pareadas por instancia
+  figuras.py                  6 figuras
+resultados/                   JSON, CSV de ejecuciones, figuras, logs
+informe/                      informe.tex, informe.pdf, img/logo_usa.png
 ```
-
-## Las nueve funciones exigidas
-
-Todas están en `src/genetico.py`. `calcular_costo` y `calcular_beneficio` se
-definen en `src/instancia.py` y se reexportan desde `genetico.py` para no
-duplicar la definición de los datos.
-
-| Función | Ubicación |
-|---|---|
-| `generar_individuo()` | `genetico.py` |
-| `generar_poblacion()` | `genetico.py` |
-| `calcular_costo()` | `instancia.py`, reexportada en `genetico.py` |
-| `calcular_beneficio()` | `instancia.py`, reexportada en `genetico.py` |
-| `calcular_aptitud()` | `genetico.py` |
-| `seleccionar_padre()` | `genetico.py` |
-| `cruzar()` | `genetico.py` |
-| `mutar()` | `genetico.py` |
-| `ejecutar_algoritmo_genetico()` | `genetico.py` |
-
-## Resultados principales
-
-- **Óptimo global:** B* = 100, costo 50 exacto, `1010010001` = {P1, P3, P6, P10}.
-  Único. Verificado por enumeración y por programación dinámica de forma
-  independiente.
-- **La heurística voraz por razón b/c alcanza ese óptimo** en diez operaciones.
-- **Umbral exacto de penalización:** λ* = 1.9. Por debajo, el óptimo del paisaje
-  penalizado es infactible. El λ = 5 sugerido rinde 0.31 de tasa de éxito frente
-  a 0.65 con λ = 2.1.
-- **El algoritmo genético no supera a la búsqueda aleatoria** con el mismo
-  presupuesto de evaluaciones en ninguna de las doce configuraciones evaluadas
-  (McNemar pareado con corrección de Holm, 100 semillas): empata en tres y es
-  significativamente peor en ocho.
-
-## Nota sobre reproducibilidad
-
-Cada ejecución usa una instancia `random.Random(semilla)` propia en lugar del
-estado global de `random`. Los resultados son por tanto reproducibles
-exactamente, y el orden en que se ejecuten los scripts no altera ninguna salida.
