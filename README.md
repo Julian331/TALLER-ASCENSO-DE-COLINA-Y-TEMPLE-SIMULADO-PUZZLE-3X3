@@ -6,18 +6,6 @@ mismo presupuesto de evaluaciones, más el análisis de complejidad
 computacional. Todos los parámetros se eligen con el mismo protocolo de
 calibración, en un conjunto de instancias distinto del de prueba.
 
-## Requisitos
-
-- Python 3.9 o superior
-- `matplotlib` (solo para las figuras)
-
-```bash
-pip install matplotlib
-```
-
-## Ejecución
-
-Todos los scripts se ejecutan desde `src/`, en este orden:
 
 ```bash
 cd src
@@ -35,14 +23,6 @@ Todo es determinista (un generador con semilla fija por ejecución): al
 repetir el pipeline completo, las ejecuciones y los JSON salen idénticos. Solo
 cambian los tiempos de reloj.
 
-## Informe
-
-```bash
-cd informe && pdflatex informe.tex && pdflatex informe.tex
-```
-
-Si Latin Modern está instalado (MiKTeX, TeX Live completo, Overleaf), se usa
-con codificación T1; si no, el documento compila con Computer Modern.
 
 ## Estructura
 
